@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEGA — AI Gaming Coach for Discord</title>
+<meta name="description" content="VEGA is the AI-powered Discord bot that coaches your server, tracks live stats across 40+ games, and makes every player better.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN: Dark military-command-center aesthetic
+   Deep navy/black + electric gold + acid green
+   Typography: Bebas Neue (display) + Barlow (body)
+   Unforgettable element: scanline HUD overlays,
+   diagonal slashes, blinking cursor, data readout feel
+═══════════════════════════════════════════════ */
+:root{
+  --gold:#f0b429;--gold-hi:#ffe083;--gold-lo:#8a6200;
+  --green:#39ff87;--green-dim:#0a3d22;
+  --red:#ff3d5a;--blue:#38b6ff;
+  --bg:#04040d;--bg2:#070714;--bg3:#0c0c1e;--bg4:#111128;--bg5:#181836;
+  --border:rgba(240,180,41,.1);--border2:rgba(240,180,41,.22);--border3:rgba(240,180,41,.4);
+  --text:#dde4f0;--muted:#4a5070;--muted2:#7a84a0;
+  --scan:rgba(240,180,41,.03);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow-x:hidden;cursor:none}
+
+/* ── CURSOR ── */
+#cur{width:8px;height:8px;background:var(--gold);position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);transition:width .15s,height .15s}
+#cur-ring{width:28px;height:28px;border:1px solid rgba(240,180,41,.6);position:fixed;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)}
+
+/* ── SCANLINES ── */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:1000;opacity:.4}
+/* ── GRID ── */
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(240,180,41,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(240,180,41,.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:60px;background:rgba(4,4,13,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:'Bebas Neue';font-size:1.7rem;letter-spacing:6px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:12px}
+.nav-logo-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links a{color:var(--muted2);text-decoration:none;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:color .2s;padding:4px 0;border-bottom:1px solid transparent}
+.nav-links a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+.nav-cta{font-family:'Barlow';background:var(--gold);color:#000;font-weight:700;font-size:.72rem;letter-spacing:2px;text-transform:uppercase;padding:9px 22px;text-decoration:none;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:background .2s}
+.nav-cta:hover{background:var(--gold-hi)}
+
+/* ── SECTION BASE ── */
+section{position:relative;z-index:2}
+.wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:grid;place-items:center;text-align:center;padding:100px 24px 60px;overflow:hidden;position:relative}
+.hero-glows{position:absolute;inset:0;pointer-events:none}
+.glow{position:absolute;border-radius:50%;filter:blur(100px);opacity:.3}
+.glow-gold{width:800px;height:500px;background:radial-gradient(ellipse,rgba(240,180,41,.35),transparent 70%);top:-100px;left:50%;transform:translateX(-50%)}
+.glow-blue{width:400px;height:400px;background:radial-gradient(circle,rgba(56,182,255,.2),transparent 70%);bottom:0;right:-100px}
+.hero-hud{position:absolute;top:80px;left:40px;font-family:'JetBrains Mono';font-size:.6rem;color:var(--muted);letter-spacing:1px;text-align:left;line-height:2;animation:fadeIn 1s .5s both}
+.hero-hud span{color:var(--green)}
+.hero-hud2{position:absolute;top:80px;right:40px;font-family:'JetBrains Mono';font-size:.6rem;color:var(--muted);letter-spacing:1px;text-align:right;line-height:2;animation:fadeIn 1s .5s both}
+.hero-hud2 span{color:var(--gold)}
+.hero-eyebrow{font-family:'JetBrains Mono';font-size:.68rem;color:var(--green);letter-spacing:5px;text-transform:uppercase;margin-bottom:20px;animation:fadeUp .6s .1s both;display:flex;align-items:center;justify-content:center;gap:12px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';display:block;height:1px;width:40px;background:var(--green);opacity:.5}
+h1{font-family:'Bebas Neue';font-size:clamp(5.5rem,15vw,14rem);line-height:.88;letter-spacing:3px;animation:fadeUp .7s .2s both;margin-bottom:24px}
+h1 .line2{display:block;-webkit-text-stroke:2px var(--gold);color:transparent;position:relative}
+h1 .line2::after{content:attr(data-text);position:absolute;left:0;right:0;color:var(--gold);opacity:.08;transform:skewX(-3deg) translateY(4px);filter:blur(3px)}
+.hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--muted2);max-width:600px;margin:0 auto 44px;line-height:1.8;font-weight:300;animation:fadeUp .7s .35s both}
+.hero-sub b{color:var(--text);font-weight:600}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;animation:fadeUp .7s .5s both}
+.btn-primary{background:var(--gold);color:#000;font-weight:700;font-size:.82rem;letter-spacing:2px;text-transform:uppercase;padding:15px 36px;text-decoration:none;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:all .2s;display:inline-block}
+.btn-primary:hover{background:var(--gold-hi);transform:translateY(-2px)}
+.btn-ghost{background:transparent;color:var(--text);font-weight:600;font-size:.82rem;letter-spacing:2px;text-transform:uppercase;padding:14px 36px;text-decoration:none;border:1px solid var(--border2);transition:all .2s;display:inline-block}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px)}
+.hero-stats-row{display:flex;justify-content:center;gap:0;margin-top:72px;animation:fadeUp .7s .65s both;flex-wrap:wrap}
+.hstat{padding:20px 40px;border-left:1px solid var(--border);text-align:center}
+.hstat:first-child{border-left:none}
+.hstat-num{font-family:'Bebas Neue';font-size:3rem;color:var(--gold);line-height:1;display:block}
+.hstat-lbl{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:4px;display:block}
+
+/* ── MARQUEE ── */
+.ticker{padding:12px 0;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;position:relative;z-index:2}
+.ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:1;pointer-events:none}
+.ticker::before{left:0;background:linear-gradient(90deg,var(--bg3),transparent)}
+.ticker::after{right:0;background:linear-gradient(-90deg,var(--bg3),transparent)}
+.ticker-track{display:flex;width:max-content;animation:ticker 35s linear infinite}
+.ticker-item{font-family:'Bebas Neue';font-size:1rem;letter-spacing:4px;color:var(--muted);padding:0 28px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.ticker-item i{color:var(--gold);font-style:normal}
+.ticker-sep{color:var(--border3);font-size:.6rem}
+
+/* ── SECTION HEADINGS ── */
+.s-label{font-family:'JetBrains Mono';font-size:.62rem;color:var(--green);letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.s-label::before{content:'>';color:var(--gold)}
+.s-title{font-family:'Bebas Neue';font-size:clamp(2.5rem,5vw,4.2rem);line-height:1;margin-bottom:16px;letter-spacing:1px}
+.s-sub{color:var(--muted2);font-size:.95rem;line-height:1.75;max-width:540px;font-weight:300}
+
+/* ── GAMES ── */
+.games-section{padding:100px 0;background:var(--bg)}
+.games-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px;margin-bottom:48px}
+.games-grid{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:220px;gap:3px}
+.game-card{position:relative;overflow:hidden;background:var(--bg3);cursor:default}
+.game-card.tall{grid-row:span 2}
+.game-card.wide{grid-column:span 2}
+.game-img-wrap{position:absolute;inset:0}
+.game-img{width:100%;height:100%;object-fit:cover;filter:brightness(.45) saturate(.9);transition:filter .4s,transform .5s}
+.game-card:hover .game-img{filter:brightness(.7) saturate(1.2);transform:scale(1.06)}
+.game-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(4,4,13,.98) 0%,rgba(4,4,13,.4) 45%,transparent 100%);z-index:1}
+.game-card:hover .game-overlay{background:linear-gradient(to top,rgba(4,4,13,.95) 0%,rgba(4,4,13,.2) 55%,transparent 100%)}
+.game-content{position:absolute;bottom:0;left:0;right:0;padding:16px;z-index:2}
+.game-emoji{font-size:1.3rem;display:block;margin-bottom:4px}
+.game-name{font-family:'Bebas Neue';font-size:1.15rem;letter-spacing:2px;line-height:1;display:block;margin-bottom:3px}
+.game-api-tag{font-family:'JetBrains Mono';font-size:.55rem;color:var(--gold);letter-spacing:1px;opacity:.75}
+.game-stats-preview{font-size:.72rem;color:var(--muted2);margin-top:4px;opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
+.game-card:hover .game-stats-preview{opacity:1;transform:none}
+.game-top-tag{position:absolute;top:10px;left:10px;z-index:3;font-family:'JetBrains Mono';font-size:.52rem;letter-spacing:1px;padding:3px 8px;text-transform:uppercase}
+.tag-free{background:rgba(57,255,135,.12);color:var(--green);border:1px solid rgba(57,255,135,.25)}
+.tag-official{background:rgba(240,180,41,.1);color:var(--gold);border:1px solid rgba(240,180,41,.2)}
+.tag-hypixel{background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.2)}
+
+/* ── DIAGONAL BREAK ── */
+.slash-break{height:60px;background:var(--bg2);clip-path:polygon(0 0,100% 40px,100% 100%,0 100%);position:relative;z-index:2}
+.slash-break2{height:60px;background:var(--bg);clip-path:polygon(0 40px,100% 0,100% 100%,0 100%);position:relative;z-index:2}
+
+/* ── FEATURES ── */
+.features-section{padding:100px 0;background:var(--bg2)}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--border);margin-top:56px}
+.feat-card{background:var(--bg2);padding:36px 30px;position:relative;overflow:hidden;transition:background .2s}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
+.feat-card:hover{background:var(--bg3)}
+.feat-card:hover::before{opacity:1}
+.feat-icon{font-size:2.2rem;margin-bottom:16px;display:block}
+.feat-name{font-family:'Bebas Neue';font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:10px}
+.feat-desc{font-size:.88rem;color:var(--muted2);line-height:1.8;font-weight:300}
+.feat-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.pill{font-family:'JetBrains Mono';font-size:.55rem;letter-spacing:1px;padding:3px 8px;border:1px solid var(--border2);color:var(--muted2);text-transform:uppercase}
+.pill.premium{border-color:rgba(240,180,41,.3);color:var(--gold);background:rgba(240,180,41,.06)}
+
+/* ── COMMANDS ── */
+.commands-section{padding:100px 0;background:var(--bg)}
+.cmd-layout{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:48px;background:var(--border)}
+.cmd-group{background:var(--bg)}
+.cmd-group-header{padding:12px 20px;background:var(--bg4);font-family:'JetBrains Mono';font-size:.62rem;letter-spacing:3px;color:var(--gold);text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.cmd-group-header::before{content:'//';color:var(--muted);font-size:.55rem}
+.cmd-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);transition:background .15s}
+.cmd-row:hover{background:var(--bg3)}
+.cmd-slash{font-family:'JetBrains Mono';font-size:.78rem;color:var(--green);min-width:120px;white-space:nowrap}
+.cmd-text{font-size:.8rem;color:var(--muted2);line-height:1.4;flex:1}
+.cmd-badge{font-family:'JetBrains Mono';font-size:.52rem;padding:2px 6px;background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.2);color:var(--gold);white-space:nowrap;letter-spacing:1px}
+.cmd-badge.free{background:rgba(57,255,135,.08);border-color:rgba(57,255,135,.2);color:var(--green)}
+
+/* ── PRICING ── */
+.pricing-section{padding:100px 0;background:var(--bg2)}
+.pricing-header{text-align:center;margin-bottom:64px}
+.pricing-header .s-sub{margin:0 auto}
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:3px;background:var(--border)}
+.plan{background:var(--bg3);padding:36px 28px;position:relative;transition:transform .2s}
+.plan:hover{transform:translateY(-4px)}
+.plan.featured{background:var(--bg4);border:1px solid var(--border2)}
+.plan.featured:hover{transform:translateY(-4px)}
+.plan-ribbon{position:absolute;top:-1px;right:20px;background:var(--gold);color:#000;font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:2px;font-weight:700;padding:5px 14px;clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),50% 100%,0 calc(100% - 6px))}
+.plan-tier{font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.plan-name{font-family:'Bebas Neue';font-size:2rem;letter-spacing:3px;margin-bottom:4px}
+.plan-price{font-family:'Bebas Neue';font-size:3.5rem;color:var(--gold);line-height:1;margin-bottom:4px}
+.plan-price sub{font-family:'Barlow';font-size:.85rem;color:var(--muted2);font-weight:300;vertical-align:bottom;margin-left:2px}
+.plan-note{font-size:.78rem;color:var(--muted);margin-bottom:24px;font-style:italic}
+.plan-divider{height:1px;background:var(--border);margin-bottom:20px}
+.plan-feats{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+.plan-feats li{display:flex;gap:10px;font-size:.83rem;line-height:1.4}
+.plan-feats li span.y{color:var(--green);flex-shrink:0;font-size:.75rem;margin-top:2px}
+.plan-feats li span.n{color:var(--muted);flex-shrink:0;font-size:.75rem;margin-top:2px}
+.plan-feats li.dim{opacity:.35}
+.plan-btn{display:block;text-align:center;padding:13px;font-weight:700;font-size:.78rem;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all .2s;font-family:'Barlow';clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)}
+.plan-btn-gold{background:var(--gold);color:#000}
+.plan-btn-gold:hover{background:var(--gold-hi)}
+.plan-btn-outline{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.plan-btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.addons-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:3px;margin-top:3px;background:var(--border)}
+.addon-card{background:var(--bg3);padding:24px;display:flex;flex-direction:column;gap:6px}
+.addon-name{font-family:'Bebas Neue';font-size:1.1rem;letter-spacing:2px}
+.addon-price{color:var(--gold);font-weight:600;font-size:.9rem}
+.addon-desc{font-size:.78rem;color:var(--muted2);line-height:1.5}
+
+/* ── SETUP ── */
+.setup-section{padding:100px 0;background:var(--bg)}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;margin-top:56px}
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:20px;padding:24px 0;border-bottom:1px solid var(--border);position:relative}
+.step-num{font-family:'Bebas Neue';font-size:2.5rem;color:var(--border2);min-width:44px;line-height:1;flex-shrink:0}
+.step-body{}
+.step-name{font-weight:700;font-size:.95rem;margin-bottom:5px}
+.step-desc{font-size:.83rem;color:var(--muted2);line-height:1.6}
+.terminal{background:var(--bg2);border:1px solid var(--border);position:sticky;top:80px}
+.term-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg4);border-bottom:1px solid var(--border)}
+.tdot{width:9px;height:9px;border-radius:50%}
+.tdot-r{background:#ff5f57}.tdot-y{background:#febc2e}.tdot-g{background:#28c840}
+.term-label{font-family:'JetBrains Mono';font-size:.58rem;color:var(--muted);margin-left:8px;letter-spacing:1px}
+.term-body{padding:20px;font-family:'JetBrains Mono';font-size:.74rem;line-height:2.1}
+.tc-gold{color:var(--gold)}.tc-green{color:var(--green)}.tc-muted{color:var(--muted)}.tc-blue{color:var(--blue)}.tc-text{color:var(--text)}
+.blink-cursor::after{content:'█';animation:blink .8s step-end infinite;color:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── REVIEWS ── */
+.reviews-section{padding:100px 0;background:var(--bg2)}
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:3px;background:var(--border);margin-top:56px}
+.review{background:var(--bg3);padding:32px 28px;position:relative;overflow:hidden}
+.review::before{content:'"';position:absolute;top:-10px;left:20px;font-family:'Bebas Neue';font-size:8rem;color:rgba(240,180,41,.05);line-height:1;pointer-events:none}
+.review-stars{color:var(--gold);letter-spacing:3px;font-size:.85rem;margin-bottom:16px}
+.review-text{font-size:.9rem;line-height:1.85;color:var(--text);margin-bottom:20px;font-style:italic;font-weight:300}
+.review-author{font-family:'JetBrains Mono';font-size:.65rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.review-game{font-size:.72rem;color:var(--muted);margin-top:3px}
+
+/* ── COPYRIGHT SECTION ── */
+.cr-block{background:var(--bg2);border:1px solid var(--border);padding:36px 32px}
+.cr-block-title{font-family:'Bebas Neue';font-size:1.5rem;letter-spacing:2px;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:12px}
+.cr-block-title span{font-family:'JetBrains Mono';font-size:.55rem;color:var(--green);letter-spacing:2px;padding:2px 8px;border:1px solid rgba(57,255,135,.3)}
+.cr-type{font-family:'JetBrains Mono';font-size:.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:20px}
+.cr-p{font-size:.86rem;color:var(--muted2);line-height:1.8;margin-bottom:16px}
+.cr-p:last-child{margin-bottom:0}
+.cr-steps{list-style:none;display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.cr-step{display:flex;gap:12px;font-size:.84rem;line-height:1.6}
+.cr-step-num{font-family:'JetBrains Mono';font-size:.65rem;color:var(--gold);min-width:24px;margin-top:2px}
+.cr-step-text{color:var(--muted2)}
+.cr-step-text b{color:var(--text)}
+.cr-cost{background:var(--bg3);border:1px solid var(--border);padding:16px 20px;margin-top:16px;font-family:'JetBrains Mono';font-size:.72rem;line-height:1.9}
+.cr-cost .label{color:var(--muted);letter-spacing:1px}
+.cr-cost .val{color:var(--gold)}
+.cr-notice{margin-top:20px;padding:16px;background:rgba(240,180,41,.06);border-left:2px solid var(--gold);font-size:.8rem;color:var(--muted2);line-height:1.7}
+.cr-notice b{color:var(--text)}
+.cr-full-row{grid-column:1/-1}
+.cr-checklist{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
+.cr-check{display:flex;gap:10px;font-size:.83rem;line-height:1.5}
+.cr-check span.y{color:var(--green);flex-shrink:0}
+.cr-check span.w{color:var(--gold);flex-shrink:0}
+
+/* ── FAQ ── */
+.faq-section{padding:100px 0;background:var(--bg2)}
+.faq-inner{max-width:760px;margin:0 auto;margin-top:56px}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 0;cursor:pointer;font-weight:600;font-size:.92rem;transition:color .2s;user-select:none;gap:16px}
+.faq-q:hover{color:var(--gold)}
+.faq-toggle{font-family:'JetBrains Mono';font-size:1rem;color:var(--gold);transition:transform .3s;flex-shrink:0}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .38s ease}
+.faq-a p{padding-bottom:20px;color:var(--muted2);font-size:.86rem;line-height:1.85;font-weight:300}
+.faq-item.open .faq-toggle{transform:rotate(45deg)}
+.faq-item.open .faq-a{max-height:500px}
+
+/* ── CTA ── */
+.cta-section{padding:120px 0;background:var(--bg3);text-align:center;position:relative;overflow:hidden}
+.cta-bg-lines{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.cta-line{position:absolute;height:1px;background:linear-gradient(90deg,transparent,rgba(240,180,41,.15),transparent);width:100%;animation:scan-line 4s ease-in-out infinite}
+.cta-line:nth-child(1){top:20%;animation-delay:0s}
+.cta-line:nth-child(2){top:50%;animation-delay:1.3s}
+.cta-line:nth-child(3){top:80%;animation-delay:2.6s}
+@keyframes scan-line{0%,100%{opacity:0;transform:translateX(-100%)}50%{opacity:1}100%{opacity:0;transform:translateX(100%)}}
+.cta-section h2{font-family:'Bebas Neue';font-size:clamp(3.5rem,9vw,8rem);line-height:.95;margin-bottom:20px;position:relative;z-index:1}
+.cta-section h2 em{font-style:normal;color:var(--gold)}
+.cta-section p{color:var(--muted2);font-size:1rem;max-width:440px;margin:0 auto 40px;line-height:1.8;position:relative;z-index:1;font-weight:300}
+.cta-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+
+/* ── FOOTER ── */
+footer{background:var(--bg);border-top:1px solid var(--border);padding:40px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px}
+.footer-logo{font-family:'Bebas Neue';font-size:1.6rem;letter-spacing:5px;color:var(--gold)}
+.footer-copy{font-family:'JetBrains Mono';font-size:.6rem;color:var(--muted);line-height:1.8;text-align:center}
+.footer-links{display:flex;justify-content:flex-end;gap:20px}
+.footer-links a{font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:1px;transition:color .2s;text-transform:uppercase;font-weight:600}
+.footer-links a:hover{color:var(--gold)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .65s,transform .65s}
+.reveal.in{opacity:1;transform:none}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1000px){
+  .games-grid{grid-template-columns:repeat(3,1fr);grid-auto-rows:200px}
+  .game-card.wide{grid-column:span 1}
+}
+@media(max-width:768px){
+  nav{padding:0 20px}
+  .nav-links{display:none}
+  .wrap{padding:0 20px}
+  .hero-hud,.hero-hud2{display:none}
+  h1{font-size:clamp(4rem,18vw,7rem)}
+  .hero-stats-row{gap:0}
+  .hstat{padding:16px 20px}
+  .games-grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:180px}
+  .game-card.tall{grid-row:span 1}
+  .setup-grid,.copyright-grid,.cmd-layout{grid-template-columns:1fr}
+  .cr-checklist{grid-template-columns:1fr}
+  footer{grid-template-columns:1fr;text-align:center}
+  .footer-links{justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    VEGA
+  </a>
+  <ul class="nav-links">
+    <li><a href="#games">Games</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#commands">Commands</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <a href="https://discord.com/oauth2/authorize?client_id=1479551037051502703&permissions=268749904&scope=bot%20applications.commands" class="nav-cta">Add to Discord ↗</a>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-glows">
+    <div class="glow glow-gold"></div>
+    <div class="glow glow-blue"></div>
+  </div>
+  <div class="hero-hud">
+    SYS: VEGA v2.0<br>
+    STATUS: <span>● ONLINE</span><br>
+    SERVERS: <span>GROWING</span>
+  </div>
+  <div class="hero-hud2">
+    GAMES: <span>40+</span><br>
+    APIS: <span>8 ACTIVE</span><br>
+    COMMANDS: <span>28</span>
+  </div>
+
+  <div>
+    <p class="hero-eyebrow">AI-Powered Discord Gaming Coach</p>
+    <h1>YOUR SERVER<br><span class="line2" data-text="PLAYS BETTER">PLAYS BETTER</span></h1>
+    <p class="hero-sub">VEGA is the <b>AI gaming coach</b> built for Discord — live stats across <b>40+ games</b>, personalized tips, daily goals, clan leaderboards, and screenshot roasts that actually make you improve.</p>
+    <div class="hero-btns">
+      <a href="https://discord.com/oauth2/authorize?client_id=1479551037051502703&permissions=268749904&scope=bot%20applications.commands" class="btn-primary">Add VEGA — It's Free</a>
+      <a href="#features" class="btn-ghost">See Everything ↓</a>
+    </div>
+    <div class="hero-stats-row">
+      <div class="hstat"><span class="hstat-num">40+</span><span class="hstat-lbl">Games Tracked</span></div>
+      <div class="hstat"><span class="hstat-num">28</span><span class="hstat-lbl">Commands</span></div>
+      <div class="hstat"><span class="hstat-num">8</span><span class="hstat-lbl">Live APIs</span></div>
+      <div class="hstat"><span class="hstat-num">∞</span><span class="hstat-lbl">Coaching Tips</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TICKER ═══ -->
+<div class="ticker">
+  <div class="ticker-track">
+    <div class="ticker-item"><i>⚔️</i> LEAGUE OF LEGENDS <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🔫</i> VALORANT <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>⛏️</i> MINECRAFT <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🏗️</i> FORTNITE <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🔶</i> APEX LEGENDS <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🌟</i> DESTINY 2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🗡️</i> DOTA 2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🏰</i> WORLD OF WARCRAFT <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🃏</i> MTG ARENA <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>💣</i> COUNTER-STRIKE 2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🧟</i> DAYZ <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🎲</i> TEAMFIGHT TACTICS <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🔧</i> RUST <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🪖</i> PUBG <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🎩</i> TF2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🚗</i> ROCKET LEAGUE <span class="ticker-sep">◆</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><i>⚔️</i> LEAGUE OF LEGENDS <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🔫</i> VALORANT <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>⛏️</i> MINECRAFT <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🏗️</i> FORTNITE <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🔶</i> APEX LEGENDS <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🌟</i> DESTINY 2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🗡️</i> DOTA 2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🏰</i> WORLD OF WARCRAFT <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🃏</i> MTG ARENA <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>💣</i> COUNTER-STRIKE 2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🧟</i> DAYZ <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🎲</i> TEAMFIGHT TACTICS <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🔧</i> RUST <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🪖</i> PUBG <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🎩</i> TF2 <span class="ticker-sep">◆</span></div>
+    <div class="ticker-item"><i>🚗</i> ROCKET LEAGUE <span class="ticker-sep">◆</span></div>
+  </div>
+</div>
+
+<!-- ═══ GAMES ═══ -->
+<section class="games-section" id="games">
+  <div class="wrap">
+    <div class="games-header">
+      <div>
+        <p class="s-label reveal">Supported Games</p>
+        <h2 class="s-title reveal">40+ GAMES.<br>ONE BOT.</h2>
+      </div>
+      <p class="s-sub reveal">Live stats pulled from official APIs. No scraping — real data every time.</p>
+    </div>
+
+    <div class="games-grid reveal">
+
+      <!-- ROW 1 -->
+      <div class="game-card tall">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg" alt="CS2" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">💣</span>
+          <span class="game-name">Counter-Strike 2</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">K/D · Wins · Headshot% · Hours · Deaths</div>
+        </div>
+      </div>
+
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1172470/header.jpg" alt="Apex" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Tracker.gg API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🔶</span>
+          <span class="game-name">Apex Legends</span>
+          <span class="game-api-tag">tracker.gg official api</span>
+          <div class="game-stats-preview">K/D · Wins · Damage · Rank Score · Matches</div>
+        </div>
+      </div>
+
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg" alt="Destiny 2" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Bungie API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🌟</span>
+          <span class="game-name">Destiny 2</span>
+          <span class="game-api-tag">bungie.net official api</span>
+          <div class="game-stats-preview">PvP K/D · KDA · Wins · Matches · Raids</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/570/header.jpg" alt="Dota 2" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🗡️</span>
+          <span class="game-name">Dota 2</span>
+          <span class="game-api-tag">opendota api</span>
+          <div class="game-stats-preview">Rank · Stars · W/L · Win Rate · MMR</div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="game-card tall wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg" alt="LoL" onerror="this.parentElement.style.background='#0c0c1e'" style="object-position:center 30%"></div>
+        <div class="game-top-tag tag-official">Riot Games API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">⚔️</span>
+          <span class="game-name">League of Legends</span>
+          <span class="game-api-tag">riot games official api</span>
+          <div class="game-stats-preview">Solo Rank · LP · W/L · Flex Rank · Level · Champion Mastery</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/252490/header.jpg" alt="Rust" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🔧</span>
+          <span class="game-name">Rust</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours Played · Recent Hours · Online Status</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1326470/header.jpg" alt="Fortnite" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🏗️</span>
+          <span class="game-name">Fortnite</span>
+          <span class="game-api-tag">fortnite-api.com</span>
+          <div class="game-stats-preview">Wins · K/D · Win Rate · Matches · Top 10s</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/221100/header.jpg" alt="DayZ" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🧟</span>
+          <span class="game-name">DayZ</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours Played · Recent Hours · Online Status</div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg" alt="Valorant" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🔫</span>
+          <span class="game-name">Valorant</span>
+          <span class="game-api-tag">henrik dev api</span>
+          <div class="game-stats-preview">Current Rank · Peak Rank · RR · ELO · Level</div>
+        </div>
+      </div>
+
+      <div class="game-card tall">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/2357570/header.jpg" alt="Minecraft" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-hypixel">Hypixel API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">⛏️</span>
+          <span class="game-name">Minecraft</span>
+          <span class="game-api-tag">mojang + hypixel api</span>
+          <div class="game-stats-preview">BedWars · SkyWars · Duels · Network Level · Achievements</div>
+        </div>
+      </div>
+
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/2835570/header.jpg" alt="WoW" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Blizzard API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🏰</span>
+          <span class="game-name">World of Warcraft</span>
+          <span class="game-api-tag">blizzard battle.net api</span>
+          <div class="game-stats-preview">Level · Class · Realm · Faction · Item Level</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/578080/header.jpg" alt="PUBG" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🪖</span>
+          <span class="game-name">PUBG</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours Played · Recent Hours · Online Status</div>
+        </div>
+      </div>
+
+      <!-- ROW 4 -->
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/440/header.jpg" alt="TF2" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🎩</span>
+          <span class="game-name">Team Fortress 2</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours Played · Recent Hours · Achievements</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg" alt="Rocket League" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🚗</span>
+          <span class="game-name">Rocket League</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours Played · Recent Hours · Online Status</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1364780/header.jpg" alt="TFT" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Riot Games API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🎲</span>
+          <span class="game-name">Teamfight Tactics</span>
+          <span class="game-api-tag">riot games official api</span>
+          <div class="game-stats-preview">Rank · LP · Wins · Losses · Traits</div>
+        </div>
+      </div>
+
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/2141910/header.jpg" alt="MTG Arena" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🃏</span>
+          <span class="game-name">MTG Arena</span>
+          <span class="game-api-tag">scryfall api</span>
+          <div class="game-stats-preview">Card Lookup · Format Legality · Rank Coaching · Deck Advice</div>
+        </div>
+      </div>
+
+
+      <!-- ROW 5 — EXPANDED LIBRARY -->
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/359550/header.jpg" alt="R6 Siege" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">R6 API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🛡️</span>
+          <span class="game-name">Rainbow Six Siege</span>
+          <span class="game-api-tag">ubisoft api</span>
+          <div class="game-stats-preview">Rank · K/D · W/L · Hours · Operators</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1599340/header.jpg" alt="Lost Ark" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">⚔️</span>
+          <span class="game-name">Lost Ark</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Item Level · Class · Server</div>
+        </div>
+      </div>
+
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1172620/header.jpg" alt="Sea of Thieves" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🏴‍☠️</span>
+          <span class="game-name">Sea of Thieves</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Commendations · Gold Earned · Voyages</div>
+        </div>
+      </div>
+
+      <!-- ROW 6 -->
+      <div class="game-card tall">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg" alt="Elden Ring" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">💀</span>
+          <span class="game-name">Elden Ring</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Achievements · Deaths · Bosses</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1203220/header.jpg" alt="NARAKA" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🗡️</span>
+          <span class="game-name">NARAKA: Bladepoint</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Kills · Hours · Win Rate · Rank</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1446780/header.jpg" alt="Warframe" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Warframe API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🤖</span>
+          <span class="game-name">Warframe</span>
+          <span class="game-api-tag">warframe api</span>
+          <div class="game-stats-preview">MR · Hours · Missions · Kills · Frames</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg" alt="Hunt Showdown" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🎯</span>
+          <span class="game-name">Hunt: Showdown</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">KDA · Bounties · MMR · Hours</div>
+        </div>
+      </div>
+
+      <!-- ROW 7 -->
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1716740/header.jpg" alt="Escape from Tarkov" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🪖</span>
+          <span class="game-name">Escape from Tarkov</span>
+          <span class="game-api-tag">tarkov.dev api</span>
+          <div class="game-stats-preview">K/D · Raids · Survived% · Hours · PMC Level</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/218620/header.jpg" alt="Payday 2" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">💰</span>
+          <span class="game-name">Payday 2</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Infamy · Hours · Heists · Kills</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/346110/header.jpg" alt="ARK" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🦕</span>
+          <span class="game-name">ARK: Survival Evolved</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Dinos Tamed · Levels · Tribe</div>
+        </div>
+      </div>
+
+      <!-- ROW 8 -->
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/440900/header.jpg" alt="Conan Exiles" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🏜️</span>
+          <span class="game-name">Conan Exiles</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Level · Kills · Server</div>
+        </div>
+      </div>
+
+      <div class="game-card tall">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1174180/header.jpg" alt="Red Dead Online" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🤠</span>
+          <span class="game-name">Red Dead Online</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Rank · Kills · Gold Earned</div>
+        </div>
+      </div>
+
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1551360/header.jpg" alt="Halo Infinite" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Halo API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🪖</span>
+          <span class="game-name">Halo Infinite</span>
+          <span class="game-api-tag">halo waypoint api</span>
+          <div class="game-stats-preview">CSR Rank · K/D · Wins · Medals · Matches</div>
+        </div>
+      </div>
+
+      <!-- ROW 9 -->
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/304930/header.jpg" alt="Unturned" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🧟</span>
+          <span class="game-name">Unturned</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Kills · Deaths · Zombies Killed</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1203620/header.jpg" alt="GTFO" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">👾</span>
+          <span class="game-name">GTFO</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Expeditions · Kills · Deaths</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/230410/header.jpg" alt="Warframe PC" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🌀</span>
+          <span class="game-name">Path of Exile</span>
+          <span class="game-api-tag">poe api</span>
+          <div class="game-stats-preview">League Rank · Character · Level · Build</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1361210/header.jpg" alt="The Finals" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-free">No Key</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">📺</span>
+          <span class="game-name">THE FINALS</span>
+          <span class="game-api-tag">embark api</span>
+          <div class="game-stats-preview">Rank · K/D · Wins · Cashouts · Hours</div>
+        </div>
+      </div>
+
+      <!-- ROW 10 -->
+      <div class="game-card wide">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg" alt="GTA Online" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🚗</span>
+          <span class="game-name">GTA Online</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Level · Cash Earned · Kills</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1238820/header.jpg" alt="Battlebit" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">💣</span>
+          <span class="game-name">BattleBit Remastered</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · K/D · Rank · Wins</div>
+        </div>
+      </div>
+
+      <div class="game-card">
+        <div class="game-img-wrap"><img class="game-img" src="https://cdn.akamai.steamstatic.com/steam/apps/1422450/header.jpg" alt="Dead by Daylight" onerror="this.parentElement.style.background='#0c0c1e'"></div>
+        <div class="game-top-tag tag-official">Steam API</div>
+        <div class="game-overlay"></div>
+        <div class="game-content">
+          <span class="game-emoji">🔪</span>
+          <span class="game-name">Dead by Daylight</span>
+          <span class="game-api-tag">steam web api</span>
+          <div class="game-stats-preview">Hours · Escapes · Kills · Rank · Perks</div>
+        </div>
+      </div>
+
+      <!-- PLUS MORE banner -->
+      <div class="game-card wide" style="display:flex;align-items:center;justify-content:center;background:var(--bg4);border:1px dashed var(--border2);">
+        <div style="text-align:center;padding:32px">
+          <div style="font-family:'Bebas Neue';font-size:3rem;color:var(--gold);line-height:1">+MORE</div>
+          <div style="font-family:'JetBrains Mono';font-size:.65rem;letter-spacing:3px;color:var(--muted);margin-top:8px">MARVEL RIVALS · OVERWATCH 2 · HELLDIVERS 2<br>NEW WORLD · V RISING · SATISFACTORY · AND MORE</div>
+          <div style="margin-top:16px;font-size:.8rem;color:var(--muted2)">AI coaching via <span style="color:var(--gold)">/gg</span> works for ANY game</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="slash-break"></div>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="features-section" id="features">
+  <div class="wrap">
+    <p class="s-label reveal">What VEGA Does</p>
+    <h2 class="s-title reveal">EVERY TOOL YOUR<br>SERVER NEEDS</h2>
+    <div class="feat-grid">
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">🤖</span>
+        <div class="feat-name">AI Game Coaching</div>
+        <div class="feat-desc">Ask anything about any game and get expert coaching powered by Claude AI. Builds, counters, meta reads, mechanical tips, patch breakdowns — it knows the game.</div>
+        <div class="feat-pills">
+          <span class="pill">All games</span><span class="pill">Screenshot analysis</span><span class="pill">Patch-aware</span><span class="pill premium">Unlimited — Premium</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-1">
+        <span class="feat-icon">📊</span>
+        <div class="feat-name">Live Stats — 40+ Games</div>
+        <div class="feat-desc">Pull real-time player stats from 8 official APIs across 17 titles. K/D, rank, win rate, hours, level — all delivered as a rich Discord embed in seconds.</div>
+        <div class="feat-pills">
+          <span class="pill">Official APIs only</span><span class="pill">Multi-platform</span><span class="pill">Region-aware</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-2">
+        <span class="feat-icon">🔥</span>
+        <div class="feat-name">Screenshot Roast Mode</div>
+        <div class="feat-desc">Drop a gameplay screenshot and let VEGA roast your decisions with surgical precision. Funny, harsh, and packed with real tactical corrections.</div>
+        <div class="feat-pills">
+          <span class="pill premium">Premium</span><span class="pill">Any game</span><span class="pill">Share in server</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">🎯</span>
+        <div class="feat-name">Personal Goals System</div>
+        <div class="feat-desc">Set weekly improvement goals with deadlines. Get daily DM check-ins that celebrate wins and keep you locked in. Works per-game, per-rank, per-stat.</div>
+        <div class="feat-pills">
+          <span class="pill premium">Premium</span><span class="pill">Daily DMs</span><span class="pill">Streaks</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-1">
+        <span class="feat-icon">🏆</span>
+        <div class="feat-name">Server Leaderboards</div>
+        <div class="feat-desc">Auto-populating, self-refreshing leaderboards for every game across your entire server. Healthy competition accelerates improvement — crown your best players.</div>
+        <div class="feat-pills">
+          <span class="pill">Auto-refresh</span><span class="pill">Per-game</span><span class="pill">Season resets</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-2">
+        <span class="feat-icon">📅</span>
+        <div class="feat-name">Weekly Recap DMs</div>
+        <div class="feat-desc">Every Sunday, Premium members receive a personalized recap — what they played, how they improved, goal progress, and what to focus on next week.</div>
+        <div class="feat-pills">
+          <span class="pill premium">Premium</span><span class="pill">AI-written</span><span class="pill">Every Sunday</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">⚡</span>
+        <div class="feat-name">Steam Library Integration</div>
+        <div class="feat-desc">Link your Steam account via OAuth and unlock coaching that knows your actual game library and playtime. Tips feel like they're from someone who plays with you.</div>
+        <div class="feat-pills">
+          <span class="pill">OAuth secure</span><span class="pill">Library-aware tips</span><span class="pill">Profile card</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-1">
+        <span class="feat-icon">⚔️</span>
+        <div class="feat-name">Head-to-Head Compare</div>
+        <div class="feat-desc">Challenge any server member and get a full AI stat comparison. Side-by-side embed, AI-written verdict, share in server. Settle it once and for all.</div>
+        <div class="feat-pills">
+          <span class="pill">Cross-game</span><span class="pill">AI verdict</span><span class="pill">Shareable</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-2">
+        <span class="feat-icon">🛡️</span>
+        <div class="feat-name">Clans & Squads</div>
+        <div class="feat-desc">Create game-specific clans in your server. Recruit up to 10 members, auto-promote leaders, compete on clan leaderboards. Build your team identity inside Discord.</div>
+        <div class="feat-pills">
+          <span class="pill">10 members</span><span class="pill">Per-game rosters</span><span class="pill">Clan boards</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">💰</span>
+        <div class="feat-name">Referral Rewards</div>
+        <div class="feat-desc">Earn 7 free Premium days for every friend you refer who subscribes. No cap — the more you refer, the more free Premium you stack. Claim anytime with /refer.</div>
+        <div class="feat-pills">
+          <span class="pill">7 days/referral</span><span class="pill">No limit</span><span class="pill">Instant delivery</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-1">
+        <span class="feat-icon">🛠️</span>
+        <div class="feat-name">Server Auto-Setup</div>
+        <div class="feat-desc">Run /setup and VEGA builds your entire configuration — channels, roles, daily tip schedule, leaderboard channel, and admin control panel. Live in under a minute.</div>
+        <div class="feat-pills">
+          <span class="pill">1 command</span><span class="pill">/config panel</span><span class="pill">Per-channel schedule</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-2">
+        <span class="feat-icon">🎁</span>
+        <div class="feat-name">Gift Premium</div>
+        <div class="feat-desc">Buy Premium for a friend directly in Discord. Enter their Discord ID at checkout — they receive it instantly by DM. Available in 1 month, 3 month, 6 month, 1 year, and lifetime.</div>
+        <div class="feat-pills">
+          <span class="pill">Instant DM delivery</span><span class="pill">5 durations</span><span class="pill">Server Boost Packs</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="slash-break2"></div>
+
+<!-- ═══ COMMANDS ═══ -->
+<section class="commands-section" id="commands">
+  <div class="wrap">
+    <p class="s-label reveal">Full Command List</p>
+    <h2 class="s-title reveal">28 COMMANDS.<br>ALL SLASH-BASED.</h2>
+    <p class="s-sub reveal">Type <code style="font-family:'JetBrains Mono';color:var(--green);background:rgba(57,255,135,.08);padding:2px 6px">/</code> in any channel and see VEGA's full menu instantly.</p>
+
+    <div class="cmd-layout reveal">
+      <div class="cmd-group">
+        <div class="cmd-group-header">AI Coaching</div>
+        <div class="cmd-row"><span class="cmd-slash">/gg</span><span class="cmd-text">Ask VEGA anything — builds, tips, meta, counters, mechanics</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/build</span><span class="cmd-text">Get an optimized build for any champion, class, or hero</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/patch</span><span class="cmd-text">Latest patch breakdown and what it means for your game</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/rankup</span><span class="cmd-text">Step-by-step plan to climb to your next rank</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/analyze</span><span class="cmd-text">Upload a screenshot — get an AI roast and tactical critique</span><span class="cmd-badge">Premium</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/roast</span><span class="cmd-text">Roast another player's stats with AI commentary</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/compare</span><span class="cmd-text">Head-to-head AI stat battle between two players</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/settings</span><span class="cmd-text">Set your preferred game and region for faster queries</span></div>
+
+        <div class="cmd-group-header">Stats & Profiles</div>
+        <div class="cmd-row"><span class="cmd-slash">/stats</span><span class="cmd-text">Live stats for any player across 40+ supported games</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/profile</span><span class="cmd-text">View your or another user's linked profile card</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/leaderboard</span><span class="cmd-text">Server rankings for any game</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/botstats</span><span class="cmd-text">VEGA server health, uptime, and usage dashboard</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/linksteam</span><span class="cmd-text">Connect your Steam account for personalized coaching</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/unlinksteam</span><span class="cmd-text">Remove your Steam account connection</span></div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-header">Daily Tips & Goals</div>
+        <div class="cmd-row"><span class="cmd-slash">/tipnow</span><span class="cmd-text">Get an instant personalized coaching tip right now</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/dailytip</span><span class="cmd-text">Enable and configure daily tip DMs</span><span class="cmd-badge">Premium</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/tipsoff</span><span class="cmd-text">Pause all tip notifications immediately</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/setgoal</span><span class="cmd-text">Set a weekly improvement goal with a deadline</span><span class="cmd-badge">Premium</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/mygoal</span><span class="cmd-text">View your active goal and current progress</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/cleargoal</span><span class="cmd-text">Remove your active goal</span></div>
+
+        <div class="cmd-group-header">Clans & Social</div>
+        <div class="cmd-row"><span class="cmd-slash">/clan create</span><span class="cmd-text">Found a new clan in your server</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/clan join</span><span class="cmd-text">Join an existing clan by name</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/clan list</span><span class="cmd-text">Browse all clans on this server</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/clan mine</span><span class="cmd-text">View your clan roster and member list</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/refer</span><span class="cmd-text">Get your referral link, track rewards, claim free days</span></div>
+
+        <div class="cmd-group-header">Server Admin & Shop</div>
+        <div class="cmd-row"><span class="cmd-slash">/setup</span><span class="cmd-text">Auto-create all channels, roles, and schedules</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/config</span><span class="cmd-text">Server owner control panel — all VEGA settings</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/shop</span><span class="cmd-text">Browse and purchase all Premium plans in-Discord</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/gift</span><span class="cmd-text">Gift Premium to another server member instantly</span></div>
+        <div class="cmd-row"><span class="cmd-slash">/premium</span><span class="cmd-text">Check your plan status, usage, and expiration</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRICING ═══ -->
+<section class="pricing-section" id="pricing">
+  <div class="wrap">
+    <div class="pricing-header">
+      <p class="s-label reveal" style="justify-content:center">Tiers & Pricing</p>
+      <h2 class="s-title reveal">CHOOSE YOUR TIER</h2>
+      <p class="s-sub reveal">Built for server owners first. Premium for serious players. Free for your community.</p>
+    </div>
+
+    <div class="plans-grid reveal">
+
+      <!-- SERVER OWNER — LEAD PLAN -->
+      <div class="plan featured">
+        <div class="plan-ribbon">Best Value</div>
+        <div class="plan-tier">Tier 01</div>
+        <div class="plan-name">Server Owner</div>
+        <div class="plan-price">$24.99<sub>/ year</sub></div>
+        <div class="plan-note">Premium for your entire server. One price, everyone wins.</div>
+        <div class="plan-savings" style="display:inline-block;background:rgba(0,255,136,0.12);color:var(--green);font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:1px;padding:4px 10px;border-radius:4px;margin-bottom:8px;">💰 Save vs monthly — only $2.08/mo billed yearly</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-feats">
+          <li><span class="y">✓</span> <b>Entire server</b> gets Premium</li>
+          <li><span class="y">✓</span> Unlimited /gg AI coaching for all</li>
+          <li><span class="y">✓</span> Admin analytics dashboard</li>
+          <li><span class="y">✓</span> Auto-welcome new members</li>
+          <li><span class="y">✓</span> Server leaderboard boosts</li>
+          <li><span class="y">✓</span> Priority support channel</li>
+          <li><span class="y">✓</span> Custom bot prefix per server</li>
+          <li><span class="y">✓</span> Early access to new features</li>
+        </ul>
+        <a href="https://sikariam.gumroad.com/l/dyuibt" class="plan-btn plan-btn-gold">Get Server Plan — $24.99/yr</a>
+      </div>
+
+      <!-- PREMIUM -->
+      <div class="plan">
+        <div class="plan-tier">Tier 02</div>
+        <div class="plan-name">Premium</div>
+        <div class="plan-price">$6.99<sub>/ month</sub></div>
+        <div class="plan-note">For serious players. Billed monthly. Cancel anytime.</div>
+        <div class="plan-savings" style="display:inline-block;background:rgba(245,166,35,0.08);color:var(--muted2);font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:1px;padding:4px 10px;border-radius:4px;margin-bottom:8px;">💡 Go Lifetime and save after month 19</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-feats">
+          <li><span class="y">✓</span> <b>Unlimited</b> /gg AI coaching</li>
+          <li><span class="y">✓</span> Daily personalized tip DMs</li>
+          <li><span class="y">✓</span> Screenshot roast &amp; analysis</li>
+          <li><span class="y">✓</span> Sunday weekly recap DMs</li>
+          <li><span class="y">✓</span> Personal goals + daily check-ins</li>
+          <li><span class="y">✓</span> Head-to-head compare (AI verdict)</li>
+          <li><span class="y">✓</span> Priority response speed</li>
+          <li><span class="y">✓</span> Early access to new features</li>
+          <li class="dim"><span class="n">✗</span> Server-wide coverage</li>
+        </ul>
+        <a href="https://sikariam.gumroad.com/l/gwrqsg" class="plan-btn plan-btn-outline">Get Premium — $6.99/mo</a>
+      </div>
+
+      <!-- LIFETIME -->
+      <div class="plan">
+        <div class="plan-tier">Tier 03</div>
+        <div class="plan-name">Lifetime</div>
+        <div class="plan-price">$129.99<sub>one-time</sub></div>
+        <div class="plan-note">Pay once. Yours forever. Best long-term value.</div>
+        <div class="plan-savings" style="display:inline-block;background:rgba(245,166,35,0.12);color:var(--gold);font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:1px;padding:4px 10px;border-radius:4px;margin-bottom:8px;">💰 Pays for itself in 19 months vs Premium</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-feats">
+          <li><span class="y">✓</span> Everything in Premium</li>
+          <li><span class="y">✓</span> Never pay again</li>
+          <li><span class="y">✓</span> All future updates included</li>
+          <li><span class="y">✓</span> Founding Member badge in bot</li>
+          <li><span class="y">✓</span> Priority feature requests</li>
+          <li><span class="y">✓</span> Direct feedback access</li>
+          <li><span class="y">✓</span> VIP support</li>
+        </ul>
+        <a href="https://sikariam.gumroad.com/l/nnbbnx" class="plan-btn plan-btn-outline">Get Lifetime — $129.99</a>
+      </div>
+
+      <!-- FREE — shown last, for server members only -->
+      <div class="plan" style="border-color:rgba(74,80,112,0.3);opacity:0.85">
+        <div class="plan-tier" style="color:var(--muted)">Free Tier</div>
+        <div class="plan-name" style="color:var(--muted2)">Server Members</div>
+        <div class="plan-price" style="color:var(--muted2)">$0<sub>/ forever</sub></div>
+        <div class="plan-note">Available to members of any Discord server that has VEGA installed.</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-feats">
+          <li><span class="y">✓</span> /gg AI coaching (10 queries/day)</li>
+          <li><span class="y">✓</span> Live stats — 40+ games</li>
+          <li><span class="y">✓</span> /build, /patch, /rankup</li>
+          <li><span class="y">✓</span> Steam account linking</li>
+          <li><span class="y">✓</span> Server leaderboards</li>
+          <li><span class="y">✓</span> Clans &amp; squads</li>
+          <li class="dim"><span class="n">✗</span> Daily tip DMs</li>
+          <li class="dim"><span class="n">✗</span> Screenshot coaching</li>
+          <li class="dim"><span class="n">✗</span> Weekly recaps &amp; goals</li>
+        </ul>
+        <a href="https://discord.com/oauth2/authorize?client_id=1479551037051502703&permissions=268749904&scope=bot%20applications.commands" class="plan-btn plan-btn-outline" style="opacity:0.6;border-color:var(--muted)">Join a Server with VEGA →</a>
+      </div>
+
+    <!-- ADD-ONS -->
+    <div style="margin-top:16px" class="reveal">
+      <div class="cmd-group-header" style="background:var(--bg4);padding:12px 20px;font-family:'JetBrains Mono';font-size:.62rem;letter-spacing:3px;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-bottom:none"><span style="color:var(--muted);font-size:.55rem">//</span> Add-Ons & One-Time Purchases</div>
+      <div class="addons-row">
+        <div class="addon-card"><div class="addon-name">Tip Jar Boost</div><div class="addon-price">$2.99 — one-time</div><div class="addon-desc">Unlocks 7 days of Premium immediately. Perfect for trying before committing.</div></div>
+        <div class="addon-card"><div class="addon-name">Server Boost Pack</div><div class="addon-price">$9.99 — one-time</div><div class="addon-desc">30 days Premium for 5 members of your choice. Great for giveaways.</div></div>
+        <div class="addon-card"><div class="addon-name">Gift Premium</div><div class="addon-price">from $6.99</div><div class="addon-desc">Buy Premium for a friend. Enter their Discord ID — delivered instantly to DMs.</div></div>
+        <div class="addon-card"><div class="addon-name">Referral Rewards</div><div class="addon-price" style="color:var(--green)">Free — earn it</div><div class="addon-desc">7 free Premium days per paying referral. No cap. Use /refer to get your link.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SETUP ═══ -->
+<section class="setup-section">
+  <div class="wrap">
+    <p class="s-label reveal">Get Started</p>
+    <h2 class="s-title reveal">LIVE IN 60 SECONDS.</h2>
+    <div class="setup-grid">
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body"><div class="step-name">Add VEGA to your server</div><div class="step-desc">Click "Add to Discord" and select your server. Grant the required permissions. Takes about 10 seconds — no configuration needed.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body"><div class="step-name">Run /setup</div><div class="step-desc">VEGA auto-creates a coaching channel, leaderboard channel, roles, and sets a daily tip schedule. Everything is customizable via /config afterwards.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body"><div class="step-name">Link Steam (optional)</div><div class="step-desc">Run /linksteam and authorize through Steam's secure OAuth page. VEGA reads your public library to personalize every tip to what you actually play.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-body"><div class="step-name">Start coaching</div><div class="step-desc">Type /gg in any channel. Ask about any game. VEGA knows the current meta, your rank, and your goals. Your server starts improving today.</div></div>
+        </div>
+      </div>
+      <div class="terminal reveal reveal-delay-2">
+        <div class="term-bar">
+          <div class="tdot tdot-r"></div><div class="tdot tdot-y"></div><div class="tdot tdot-g"></div>
+          <span class="term-label">discord — #vega-coaching</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tc-muted">GamerPro</span> <span class="tc-muted" style="font-size:.55rem">Today 9:14 PM</span></div>
+          <div class="tc-gold">/gg how do i stop feeding early game in league</div>
+          <br>
+          <div><span class="tc-green">VEGA</span> <span class="tc-muted" style="font-size:.55rem">Today 9:14 PM</span></div>
+          <div class="tc-text">Three reasons you're dying early:</div>
+          <div class="tc-muted">→ Trading without minion advantage</div>
+          <div class="tc-muted">→ Staying at low HP because you don't want to miss CS</div>
+          <div class="tc-muted">→ No vision when jungler is MIA</div>
+          <br>
+          <div class="tc-text">Fix: Freeze wave under tower the moment you hit 60% HP. Force them to walk to you. They either over-commit and you punish, or they freeze back — both are wins.</div>
+          <br>
+          <div class="tc-muted">> /stats game:lol username:Player#NA1</div>
+          <div class="tc-gold">📊 Fetching live Riot stats...</div>
+          <div class="tc-green">✓ Solo: Gold II · 47LP · 54% WR · 3.1 KDA <span class="blink-cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ REVIEWS ═══ -->
+<section class="reviews-section" id="reviews">
+  <div class="wrap">
+    <p class="s-label reveal">Community</p>
+    <h2 class="s-title reveal">WHAT PLAYERS SAY</h2>
+    <div class="reviews-grid">
+      <div class="review reveal">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Went from Gold 2 to Plat 4 in two weeks running VEGA's daily tips. It actually targets your specific weaknesses instead of giving you the same generic advice you've read a hundred times."</p>
+        <div class="review-author">@frostbyte_mw</div>
+        <div class="review-game">League of Legends · Platinum IV</div>
+      </div>
+      <div class="review reveal reveal-delay-1">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"The screenshot roast mode is scary accurate. It told me exactly why I'm losing fights in Apex — the reasoning was embarrassingly correct. 10/10 would be humiliated again."</p>
+        <div class="review-author">@apex_tryhard99</div>
+        <div class="review-game">Apex Legends · Diamond III</div>
+      </div>
+      <div class="review reveal reveal-delay-2">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Server Premium for our 80-person community was the best $20 we've spent. The auto-leaderboard has everyone competing daily. Retention is up and people are actually talking about improving."</p>
+        <div class="review-author">@GamingServerAdmin</div>
+        <div class="review-game">Server Owner · 80 Members</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COPYRIGHT & TRADEMARK ═══ -->
+
+<!-- ═══ FAQ ═══ -->
+<section class="faq-section" id="faq">
+  <div class="wrap">
+    <p class="s-label reveal">FAQ</p>
+    <h2 class="s-title reveal">QUESTIONS.</h2>
+    <div class="faq-inner">
+      <div class="faq-item"><div class="faq-q">Is VEGA actually free — no tricks?<span class="faq-toggle">+</span></div><div class="faq-a"><p>Completely. The free tier never expires and doesn't require a payment method. You get AI coaching (10 queries/day), live stats for all 40+ games, leaderboards, Steam linking, clans, and most commands. Upgrade to Premium ($6.99/mo) for unlimited coaching, daily DMs, screenshot roast, weekly recaps, and goals. Server owners can get the Server Plan ($24.99/mo) for server-wide Premium coverage.</p></div></div>
+      <div class="faq-item"><div class="faq-q">Which games can I look up stats for?<span class="faq-toggle">+</span></div><div class="faq-a"><p>Includes: League of Legends, Teamfight Tactics, Valorant, Apex Legends, Fortnite (Epic), Dota 2, Destiny 2, World of Warcraft, Counter-Strike 2, DayZ, Rust, PUBG, Team Fortress 2, Rocket League, Minecraft (Hypixel), and MTG Arena. AI coaching via /gg works for virtually any game including ones not listed.</p></div></div>
+      <div class="faq-item"><div class="faq-q">Do I need a Steam account?<span class="faq-toggle">+</span></div><div class="faq-a"><p>No — Steam linking is completely optional. All commands work without it. Linking simply lets VEGA personalize coaching based on your actual library and hours instead of asking your game every time.</p></div></div>
+      <div class="faq-item"><div class="faq-q">How does Server Premium work?<span class="faq-toggle">+</span></div><div class="faq-a"><p>Server Premium grants every current and future member of your server full Premium access automatically. You manage it from the /config control panel. When new members join, they're immediately Premium. One flat monthly price regardless of server size.</p></div></div>
+      <div class="faq-item"><div class="faq-q">Can I cancel anytime?<span class="faq-toggle">+</span></div><div class="faq-a"><p>Yes. Monthly plans cancel through Gumroad anytime — you keep Premium until the end of your paid period. Lifetime purchases are permanent and require no subscription to maintain.</p></div></div>
+      <div class="faq-item"><div class="faq-q">Is VEGA safe? Does it access my game accounts?<span class="faq-toggle">+</span></div><div class="faq-a"><p>VEGA only reads publicly available player stats from official game APIs. It never asks for passwords, login credentials, or personal data. Steam linking uses OAuth — you authorize through Steam's own secure page and VEGA only sees your Steam ID and public library. We never store passwords or account credentials.</p></div></div>
+      <div class="faq-item"><div class="faq-q">What's the difference between /gg and /tipnow?<span class="faq-toggle">+</span></div><div class="faq-a"><p>/gg is open-ended — you ask any gaming question and get a full AI response. /tipnow delivers a single focused coaching tip targeted at your current skill level and game, similar to what you'd get from a daily tip DM. Both are free but /gg has a 10-query daily limit on the free tier.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section class="cta-section">
+  <div class="cta-bg-lines">
+    <div class="cta-line"></div>
+    <div class="cta-line"></div>
+    <div class="cta-line"></div>
+  </div>
+  <h2>ADD VEGA.<br><em>WIN MORE.</em></h2>
+  <p>AI coaching, live stats, daily tips, goals, leaderboards, and clans — all inside your Discord server, starting right now.</p>
+  <div class="cta-btns">
+    <a href="https://discord.com/oauth2/authorize?client_id=1479551037051502703&permissions=268749904&scope=bot%20applications.commands" class="btn-primary">Add VEGA — It's Free</a>
+    <a href="#pricing" class="btn-ghost">View Pricing</a>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-logo">VEGA™</div>
+  <div class="footer-copy">
+    © 2026 VEGA™ — All rights reserved.<br>
+    Not affiliated with Discord Inc., Riot Games, Valve, Blizzard, Epic Games, or Bungie.<br>
+    Valve Corporation, Blizzard Entertainment, Epic Games, Mojang Studios, or Bungie Inc.
+  </div>
+  <div class="footer-links">
+    <a href="https://discord.com/oauth2/authorize?client_id=1479551037051502703&permissions=268749904&scope=bot%20applications.commands">Discord</a>
+    <a href="https://top.gg/bot/1479551037051502703">top.gg</a>
+    <a href="https://sikariam.gumroad.com">Shop</a>
+    <a href="#faq">FAQ</a>
+    <a href="mailto:vegabotgg@outlook.com">Support</a>
+  </div>
+</footer>
+
+<script>
+// ── CURSOR ──
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+(function animRing(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)})();
+document.querySelectorAll('a,button').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='20px';cur.style.height='20px';ring.style.width='48px';ring.style.height='48px'});
+  el.addEventListener('mouseleave',()=>{cur.style.width='8px';cur.style.height='8px';ring.style.width='28px';ring.style.height='28px'});
+});
+
+// ── SCROLL REVEAL ──
+const revObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')});
+},{threshold:0.07});
+document.querySelectorAll('.reveal').forEach(el=>revObserver.observe(el));
+
+// ── FAQ ACCORDION ──
+document.querySelectorAll('.faq-q').forEach(q=>{
+  q.addEventListener('click',()=>{
+    const item=q.parentElement,isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+    if(!isOpen)item.classList.add('open');
+  });
+});
+
+// ── ANIMATED COUNTER ──
+function animCount(el,target){
+  let n=0,step=Math.ceil(target/60);
+  const t=setInterval(()=>{n=Math.min(n+step,target);el.textContent=n+(el.dataset.suffix||'');if(n>=target)clearInterval(t)},25);
+}
+const counters=document.querySelectorAll('.hstat-num[data-target]');
+const coObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){animCount(e.target,+e.target.dataset.target);coObserver.unobserve(e.target)}});
+},{threshold:.5});
+counters.forEach(el=>coObserver.observe(el));
+</script>
+</body>
+</html>

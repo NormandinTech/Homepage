@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayZ Mod Assistant — Tools & AI by NormandinTECH</title>
+<meta name="description" content="Professional DayZ server admin toolkit. AI modding assistant, types.xml editor, trader config tools, XML comparator, and more.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;
+  --bg2:#141414;
+  --bg3:#1a1a1a;
+  --bg4:#222;
+  --border:#2a2a2a;
+  --border2:#333;
+  --text:#e0e0e0;
+  --text2:#888;
+  --text3:#555;
+  --accent:#4ec9b0;
+  --accent2:#007acc;
+  --yellow:#dcdcaa;
+  --red:#f44747;
+  --font:'JetBrains Mono','Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.6;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(8px);height:52px;display:flex;align-items:center;padding:0 32px;gap:32px}
+.nav-logo{font-size:14px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-logo:hover{text-decoration:none}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.nav-links{display:flex;gap:24px;margin-left:auto}
+.nav-links a{font-size:11px;color:var(--text2);transition:color .15s}
+.nav-links a:hover{color:var(--text);text-decoration:none}
+.nav-cta{background:var(--accent);color:#0d0d0d;font-family:var(--font);font-size:11px;font-weight:600;padding:6px 16px;border-radius:3px;text-decoration:none;transition:opacity .15s}
+.nav-cta:hover{opacity:.85;text-decoration:none;color:#0d0d0d}
+
+/* HERO */
+.hero{padding:120px 32px 80px;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:2px;background:rgba(78,201,176,.1);color:var(--accent);border:1px solid rgba(78,201,176,.2);margin-bottom:20px;letter-spacing:.5px}
+.hero-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-size:32px;font-weight:600;color:#fff;line-height:1.29;margin-bottom:16px}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:28px;max-width:440px}
+.hero-btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn-primary{background:var(--accent);color:#0d0d0d;font-family:var(--font);font-size:11px;font-weight:600;padding:10px 22px;border-radius:3px;text-decoration:none;transition:opacity .15s;display:inline-block}
+.btn-primary:hover{opacity:.85;text-decoration:none;color:#0d0d0d}
+.btn-secondary{color:var(--text2);font-family:var(--font);font-size:11px;padding:10px 22px;border-radius:3px;border:1px solid var(--border2);text-decoration:none;transition:all .15s;display:inline-block}
+.btn-secondary:hover{color:var(--text);border-color:var(--accent);text-decoration:none}
+.hero-terminal{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;overflow:hidden}
+.terminal-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:6px}
+.t-dot{width:10px;height:10px;border-radius:50%}
+.t-dot.r{background:#f44747}.t-dot.y{background:#dcdcaa}.t-dot.g{background:#4ec9b0}
+.terminal-title{font-size:10px;color:var(--text3);margin-left:auto;margin-right:auto}
+.terminal-body{padding:16px 18px;font-size:11px;line-height:2}
+.t-cmt{color:#6a9955}.t-kw{color:#569cd6}.t-typ{color:#4ec9b0}.t-str{color:#ce9178}.t-fn{color:#dcdcaa}.t-num{color:#b5cea8}
+.t-prompt{color:var(--accent)}
+.t-cursor{display:inline-block;width:8px;height:13px;background:var(--accent);animation:blink .8s infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+
+/* STATS BAR */
+.stats{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:16px 32px}
+.stats-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.stat{text-align:center;padding:8px 0;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-num{font-size:22px;font-weight:600;color:#fff;margin-bottom:3px}
+.stat-num span{color:var(--accent)}
+.stat-label{font-size:10px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
+
+/* SECTION */
+.section{padding:64px 32px;max-width:1100px;margin:0 auto}
+.section-tag{font-size:10px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.section-title{font-size:22px;font-weight:600;color:#fff;margin-bottom:8px}
+.section-sub{font-size:12px;color:var(--text2);margin-bottom:36px;max-width:560px;line-height:1.7}
+
+/* LUNA FEATURE */
+.luna-feature{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;margin-bottom:64px}
+.luna-info{padding:40px}
+.luna-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;padding:3px 10px;border-radius:2px;background:rgba(78,201,176,.1);color:var(--accent);border:1px solid rgba(78,201,176,.2);margin-bottom:16px;letter-spacing:.5px}
+.luna-info h2{font-size:20px;font-weight:600;color:#fff;margin-bottom:10px}
+.luna-info p{font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:20px}
+.luna-features{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.luna-feat{display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text2)}
+.luna-feat-icon{color:var(--accent);flex-shrink:0;margin-top:1px}
+.luna-preview{background:var(--bg3);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:32px;min-height:360px}
+.chat-preview{width:100%;max-width:320px}
+.chat-msg{margin-bottom:10px;display:flex;gap:8px}
+.chat-msg.bot{flex-direction:row}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-bubble{padding:8px 12px;border-radius:8px;font-size:11px;line-height:1.55;max-width:85%}
+.chat-msg.bot .chat-bubble{background:var(--bg4);border:1px solid var(--border2);color:var(--text)}
+.chat-msg.user .chat-bubble{background:var(--accent2);color:#fff}
+.chat-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px}
+.chat-avatar.bot{background:#1a1a1a;color:var(--accent)}
+.chat-avatar.user{background:var(--accent2);color:#fff}
+.chat-code{background:#0a0a0a;border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-size:10px;color:var(--text);margin-top:6px;line-height:1.6}
+
+/* TOOLS GRID */
+.tools-section{padding:0 32px 64px;max-width:1100px;margin:0 auto}
+.tools-category{margin-bottom:48px}
+.tools-cat-hd{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.tools-cat-icon{font-size:16px}
+.tools-cat-title{font-size:14px;font-weight:600;color:#fff}
+.tools-cat-count{font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:auto}
+.tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tool-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s;text-decoration:none;cursor:pointer}
+.tool-card:hover{border-color:var(--border2);background:var(--bg3);text-decoration:none}
+.tool-card.featured{border-color:rgba(78,201,176,.3);background:rgba(78,201,176,.04)}
+.tool-card.featured:hover{border-color:rgba(78,201,176,.5)}
+.tool-card-icon{font-size:18px;margin-bottom:4px}
+.tool-card-title{font-size:12px;font-weight:600;color:#fff}
+.tool-card-desc{font-size:11px;color:var(--text2);line-height:1.55}
+.tool-card-badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:2px;background:rgba(78,201,176,.1);color:var(--accent);border:1px solid rgba(78,201,176,.2);margin-top:2px;width:fit-content}
+.tool-card-badge.new{background:rgba(220,220,170,.1);color:var(--yellow);border-color:rgba(220,220,170,.2)}
+.tool-card-badge.ai{background:rgba(0,122,204,.1);color:#58a6ff;border-color:rgba(0,122,204,.2)}
+
+/* FOOTER */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:32px;margin-top:0}
+.footer-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px}
+.footer-brand{font-size:13px;font-weight:600;color:#fff;margin-bottom:8px}
+.footer-sub{font-size:11px;color:var(--text3);line-height:1.7}
+.footer-col-title{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.footer-links{display:flex;flex-direction:column;gap:6px}
+.footer-links a{font-size:11px;color:var(--text3);transition:color .15s}
+.footer-links a:hover{color:var(--text);text-decoration:none}
+.footer-bottom{max-width:1100px;margin:24px auto 0;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--text3)}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;gap:32px;padding:100px 20px 48px}
+  .hero-terminal{display:none}
+  .luna-feature{grid-template-columns:1fr}
+  .luna-preview{display:none}
+  .tools-grid{grid-template-columns:1fr 1fr}
+  .stats-inner{grid-template-columns:1fr 1fr}
+  .footer-inner{grid-template-columns:1fr}
+  nav{padding:0 20px}
+  .nav-links{display:none}
+  .section{padding:40px 20px}
+  .tools-section{padding:0 20px 40px}
+}
+@media(max-width:520px){
+  .tools-grid{grid-template-columns:1fr}
+  .hero h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-dot"></div>
+    DayZ<span style="color:var(--accent)">Mod</span>.tools
+  </a>
+  <div class="nav-links">
+    <a href="app.html">Luna AI</a>
+    <a href="tools/types-editor.html">Types Editor</a>
+    <a href="tools/trader.html">Trader Tools</a>
+    <a href="tools/comparator.html">Comparator</a>
+    <a href="tutorial.html">Guide</a>
+  </div>
+  <a href="app.html" class="nav-cta">Open Luna →</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-tag"><div class="hero-tag-dot"></div> NORMANDINTECH · DAYZ TOOLKIT</div>
+    <h1>The complete<br><span>DayZ modding</span><br>toolkit.</h1>
+    <p>AI-powered mod assistant, types.xml editor, trader config tools, XML comparator, vehicle extractor, and more — all in one place. Built for serious DayZ server admins and mod developers.</p>
+    <div class="hero-btns">
+      <a href="app.html" class="btn-primary">Open Luna AI →</a>
+      <a href="#tools" class="btn-secondary">Browse Tools</a>
+    </div>
+  </div>
+  <div class="hero-terminal">
+    <div class="terminal-bar">
+      <div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div>
+      <span class="terminal-title">Luna@dzmod:~$</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">Luna@dzmod:~$</span> <span style="color:#fff">ask Luna</span></div>
+      <div class="t-cmt">// How do I add a rare military rifle to types.xml?</div>
+      <br>
+      <div><span class="t-kw">class</span> <span class="t-typ">AK74_Rare</span> {</div>
+      <div style="padding-left:16px"><span class="t-kw">nominal</span> = <span class="t-num">2</span>;</div>
+      <div style="padding-left:16px"><span class="t-kw">lifetime</span> = <span class="t-num">28800</span>;</div>
+      <div style="padding-left:16px"><span class="t-kw">usage</span>[] = {<span class="t-str">"Military"</span>};</div>
+      <div style="padding-left:16px"><span class="t-kw">value</span>[] = {<span class="t-str">"Tier3"</span>, <span class="t-str">"Tier4"</span>};</div>
+      <div>}</div>
+      <br>
+      <div><span class="t-prompt">Luna@dzmod:~$</span> <span class="t-cursor"></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stats-inner">
+    <div class="stat"><div class="stat-num">20<span>+</span></div><div class="stat-label">Tools available</div></div>
+    <div class="stat"><div class="stat-num"><span>AI</span></div><div class="stat-label">Powered by Claude</div></div>
+    <div class="stat"><div class="stat-num">Free<span>*</span></div><div class="stat-label">All tools free</div></div>
+    <div class="stat"><div class="stat-num">1.29</div><div class="stat-label">DayZ version</div></div>
+  </div>
+</div>
+
+<!-- LUNA FEATURE -->
+<div class="section">
+  <div class="luna-feature">
+    <div class="luna-info">
+      <div class="luna-badge">⚡ FEATURED — AI ASSISTANT</div>
+      <h2>Luna — DayZ Mod Assistant</h2>
+      <p>An AI assistant built specifically for DayZ PC mod developers. Ask anything about Enforce Script, XML configs, server setup, vehicles, loot economy, and DayZ Tools. Luna reads your actual code files and gives advice based on your real setup.</p>
+      <div class="luna-features">
+        <div class="luna-feat"><span class="luna-feat-icon">→</span> Enforce Script — class overrides, events, timers, RPC networking</div>
+        <div class="luna-feat"><span class="luna-feat-icon">→</span> XML economy — types.xml, cfgspawnabletypes, globals, events</div>
+        <div class="luna-feat"><span class="luna-feat-icon">→</span> Upload mod files or load PBO — Luna reads your actual code</div>
+        <div class="luna-feat"><span class="luna-feat-icon">→</span> Class extractor — find and reference classnames from any file</div>
+        <div class="luna-feat"><span class="luna-feat-icon">→</span> Server errors, vehicle modding, DayZ Tools workflow</div>
+      </div>
+      <a href="app.html" class="btn-primary">Open Luna →</a>
+    </div>
+    <div class="luna-preview">
+      <div class="chat-preview">
+        <div class="chat-msg user">
+          <div class="chat-avatar user">S</div>
+          <div class="chat-bubble">How do I override OnEnterVehicle in EnforceScript?</div>
+        </div>
+        <div class="chat-msg bot">
+          <div class="chat-avatar bot">L</div>
+          <div class="chat-bubble">
+            Override it in your modded class in 4_World layer:
+            <div class="chat-code"><span style="color:#569cd6">modded class</span> <span style="color:#4ec9b0">CarScript</span> {<br>&nbsp;&nbsp;<span style="color:#569cd6">override void</span> <span style="color:#dcdcaa">OnEnterVehicle</span>(<br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#4ec9b0">Human</span> player, <span style="color:#569cd6">int</span> seatIdx<br>&nbsp;&nbsp;) {<br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#569cd6">super</span>.OnEnterVehicle(player, seatIdx);<br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6a9955">// your code here</span><br>&nbsp;&nbsp;}<br>}</div>
+          </div>
+        </div>
+        <div class="chat-msg user">
+          <div class="chat-avatar user">S</div>
+          <div class="chat-bubble">How do I check which seat they entered?</div>
+        </div>
+        <div class="chat-msg bot">
+          <div class="chat-avatar bot">L</div>
+          <div class="chat-bubble">Use <code style="background:#111;padding:1px 4px;border-radius:2px">seatIdx === 0</code> for the driver seat. Passengers are index 1+.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLS -->
+<div class="tools-section" id="tools">
+
+  <!-- Types.xml Tools -->
+  <div class="tools-category">
+    <div class="tools-cat-hd">
+      <span class="tools-cat-icon">📦</span>
+      <span class="tools-cat-title">Types.xml Tools</span>
+      <span class="tools-cat-count">9 tools</span>
+    </div>
+    <div class="tools-grid">
+      <a href="tools/types-editor.html#extractor" class="tool-card featured">
+        <div class="tool-card-icon">🔍</div>
+        <div class="tool-card-title">Classname Extractor</div>
+        <div class="tool-card-desc">Extract all classnames from a types.xml file. Paste or upload.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#builder" class="tool-card featured">
+        <div class="tool-card-icon">📋</div>
+        <div class="tool-card-title">Types Builder</div>
+        <div class="tool-card-desc">Build types.xml entries manually, with AI help, or in bulk from a classname list.</div>
+        <div class="tool-card-badge ai">AI</div>
+      </a>
+      <a href="tools/types-editor.html#restock" class="tool-card">
+        <div class="tool-card-icon">⏱</div>
+        <div class="tool-card-title">Restock & Lifetime Editor</div>
+        <div class="tool-card-desc">Batch update restock and lifetime values across an entire types.xml.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#nominal" class="tool-card">
+        <div class="tool-card-icon">🔢</div>
+        <div class="tool-card-title">Nominal Converter</div>
+        <div class="tool-card-desc">Set all nominal values to a specific number in one click.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#adjuster" class="tool-card">
+        <div class="tool-card-icon">⚖</div>
+        <div class="tool-card-title">Nominal Adjuster</div>
+        <div class="tool-card-desc">Increment or decrement all nominal values by a set amount.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#zeronomial" class="tool-card">
+        <div class="tool-card-icon">0️⃣</div>
+        <div class="tool-card-title">Zero Nominal Updater</div>
+        <div class="tool-card-desc">Update entries with nominal 0 to a new value, with exclusions.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#tierremover" class="tool-card">
+        <div class="tool-card-icon">🧹</div>
+        <div class="tool-card-title">Tier Remover</div>
+        <div class="tool-card-desc">Strip all tier value tags from a types.xml file instantly.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#vehiclelifetime" class="tool-card">
+        <div class="tool-card-icon">🚗</div>
+        <div class="tool-card-title">Vehicle Lifetime Editor</div>
+        <div class="tool-card-desc">Update vanilla vehicle lifetime values in types.xml.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/types-editor.html#splitter" class="tool-card">
+        <div class="tool-card-icon">✂</div>
+        <div class="tool-card-title">Types Splitter</div>
+        <div class="tool-card-desc">Split a types.xml into categorized files by classname prefix.</div>
+        <div class="tool-card-badge new">NEW</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Trader Tools -->
+  <div class="tools-category">
+    <div class="tools-cat-hd">
+      <span class="tools-cat-icon">💰</span>
+      <span class="tools-cat-title">Trader Tools</span>
+      <span class="tools-cat-count">3 tools</span>
+    </div>
+    <div class="tools-grid">
+      <a href="tools/trader.html#traderplus" class="tool-card">
+        <div class="tool-card-icon">💱</div>
+        <div class="tool-card-title">TraderPlus Converter</div>
+        <div class="tool-card-desc">Convert classnames to TraderPlus price config format.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/trader.html#drjones" class="tool-card">
+        <div class="tool-card-icon">🔄</div>
+        <div class="tool-card-title">Dr. Jones → TraderPlus</div>
+        <div class="tool-card-desc">Convert Dr. Jones TraderObjects config to TraderPlus format.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/trader.html#vehicleparts" class="tool-card">
+        <div class="tool-card-icon">🔧</div>
+        <div class="tool-card-title">Vehicle Parts Config</div>
+        <div class="tool-card-desc">Generate a TraderPlus vehicle config with parts automatically.</div>
+        <div class="tool-card-badge new">NEW</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Comparison Tools -->
+  <div class="tools-category">
+    <div class="tools-cat-hd">
+      <span class="tools-cat-icon">🔀</span>
+      <span class="tools-cat-title">Comparison Tools</span>
+      <span class="tools-cat-count">2 tools</span>
+    </div>
+    <div class="tools-grid">
+      <a href="tools/comparator.html#types" class="tool-card">
+        <div class="tool-card-icon">📊</div>
+        <div class="tool-card-title">Types.xml Comparator</div>
+        <div class="tool-card-desc">Diff two types.xml files — see added, removed, and modified entries.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/comparator.html#events" class="tool-card">
+        <div class="tool-card-icon">📅</div>
+        <div class="tool-card-title">Events.xml Comparator</div>
+        <div class="tool-card-desc">Diff two events.xml files — see what changed between versions.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Vehicle & Extraction -->
+  <div class="tools-category">
+    <div class="tools-cat-hd">
+      <span class="tools-cat-icon">🚗</span>
+      <span class="tools-cat-title">Vehicle & Extraction</span>
+      <span class="tools-cat-count">2 tools</span>
+    </div>
+    <div class="tools-grid">
+      <a href="tools/vehicle.html#extractor" class="tool-card">
+        <div class="tool-card-icon">⚙</div>
+        <div class="tool-card-title">Vehicle Script Extractor</div>
+        <div class="tool-card-desc">Extract vehicle and parts classnames from vehicle script files.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="app.html" class="tool-card featured">
+        <div class="tool-card-icon">🤖</div>
+        <div class="tool-card-title">Vehicle Modding — Ask Luna</div>
+        <div class="tool-card-desc">AI help for CarScript overrides, CfgModels, damage zones, and animations.</div>
+        <div class="tool-card-badge ai">AI</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Zombie / Spawn Tools -->
+  <div class="tools-category">
+    <div class="tools-cat-hd">
+      <span class="tools-cat-icon">🧟</span>
+      <span class="tools-cat-title">Zombie & Spawn Tools</span>
+      <span class="tools-cat-count">2 tools</span>
+    </div>
+    <div class="tools-grid">
+      <a href="tools/zombie.html#zoneconverter" class="tool-card">
+        <div class="tool-card-icon">🗺</div>
+        <div class="tool-card-title">Zone Converter</div>
+        <div class="tool-card-desc">Convert zombie zones with zone types, dmin/dmax, and radius values.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+      <a href="tools/zombie.html#territory" class="tool-card">
+        <div class="tool-card-icon">📐</div>
+        <div class="tool-card-title">Territory dmin/dmax Editor</div>
+        <div class="tool-card-desc">Adjust dmin and dmax values across zombie_territories.xml.</div>
+        <div class="tool-card-badge">free</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">DayZMod.tools</div>
+      <div class="footer-sub">Professional DayZ server admin toolkit.<br>Built by NormandinTECH.<br>Powered by Claude AI.</div>
+    </div>
+    <div>
+      <div class="footer-col-title">Tools</div>
+      <div class="footer-links">
+        <a href="app.html">Luna AI Assistant</a>
+        <a href="tools/types-editor.html">Types.xml Editor</a>
+        <a href="tools/trader.html">Trader Tools</a>
+        <a href="tools/comparator.html">XML Comparator</a>
+        <a href="tools/vehicle.html">Vehicle Extractor</a>
+        <a href="tools/zombie.html">Zombie Tools</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Resources</div>
+      <div class="footer-links">
+        <a href="tutorial.html">Luna Tutorial</a>
+        <a href="https://discord.gg/eaBPR4UF" target="_blank">Discord</a>
+        <a href="https://normandintech.github.io/Homepage/" target="_blank">NormandinTECH</a>
+        <a href="mailto:vegabotgg@outlook.com">Support</a>
+        <a href="https://sikariam.gumroad.com" target="_blank">Upgrade Luna</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 NormandinTECH · DayZMod.tools</span>
+    <span>DayZ 1.29 · Not affiliated with Bohemia Interactive</span>
+  </div>
+</footer>
+
+</body>
+</html>

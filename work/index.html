@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Live, clickable examples of front-end work by NormandinTECH — landing pages and browser tools you can open and use.">
+<meta property="og:title" content="NormandinTECH — Work">
+<meta property="og:description" content="Live, clickable examples of front-end work: landing pages and browser tools you can open and use.">
+<meta property="og:type" content="website">
+<title>Work — NormandinTECH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { color-scheme: light; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img { max-width: 100%; height: auto; }
+
+  :root {
+    --paper:#EFEBE3; --surface:#F8F5EF; --ink:#1C1E1A; --muted:#5E6158;
+    --line:#D7D1C5; --accent:#2B4A7E; --brass:#9C7526;
+    --display:"Literata",Georgia,"Times New Roman",serif;
+    --body:"IBM Plex Sans",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#191814; --surface:#211F1A; --ink:#EDE8DE; --muted:#A09887;
+      --line:#35312A; --accent:#9DB9E8; --brass:#D4A851; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#191814; --surface:#211F1A; --ink:#EDE8DE; --muted:#A09887;
+    --line:#35312A; --accent:#9DB9E8; --brass:#D4A851; color-scheme: dark;
+  }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 1rem; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 61rem; margin-inline: auto; padding-inline: clamp(1rem, 5vw, 3.5rem); }
+  p { max-width: 62ch; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .top { padding-block: 2rem 0; }
+  .back { font-family: var(--mono); font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+
+  header.intro { padding-block: clamp(2.5rem, 6vw, 4rem) clamp(2rem, 5vw, 3rem); }
+  header.intro h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.08;
+    letter-spacing: -.015em; margin: 0 0 1.25rem; max-width: 18ch; text-wrap: balance;
+  }
+  .lede { font-size: clamp(1rem, 1.8vw, 1.15rem); color: var(--muted); margin: 0; }
+
+  .piece { border-top: 1px solid var(--line); padding-block: clamp(2.25rem, 5vw, 3.25rem); }
+  .piece-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem 1rem; margin-bottom: .9rem; }
+  .piece h2 { font-family: var(--display); font-weight: 400; font-size: clamp(1.4rem, 2.8vw, 1.85rem); line-height: 1.2; margin: 0; }
+  .kind {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--brass); border: 1px solid var(--line); background: var(--surface);
+    padding: .2rem .6rem; border-radius: 999px; white-space: nowrap;
+  }
+  .piece p { color: var(--muted); margin: 0 0 1rem; }
+  .built { font-family: var(--mono); font-size: .74rem; color: var(--muted); margin: 0 0 1.4rem; }
+
+  .links { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .btn {
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .04em;
+    text-decoration: none; border: 1px solid var(--line); background: var(--surface);
+    color: var(--ink); padding: .5rem .95rem; border-radius: 3px; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .btn.primary:hover { filter: brightness(1.12); color: var(--paper); }
+
+  .note {
+    font-size: .88rem; color: var(--muted); margin-top: 1.1rem;
+    padding-left: .9rem; border-left: 2px solid var(--line);
+  }
+
+  footer {
+    border-top: 1px solid var(--line); padding-block: 2rem 3rem; margin-top: 1rem;
+    font-family: var(--mono); font-size: .74rem; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between;
+  }
+  footer a { text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top"><a class="back" href="../">&larr; NormandinTECH</a></div>
+
+  <header class="intro">
+    <h1>Pages you can open, not screenshots.</h1>
+    <p class="lede">Everything below is a real page I designed and built, served here so you can click into it, resize it, and read the source. Each one is a single self-contained HTML file unless noted.</p>
+  </header>
+
+  <article class="piece">
+    <div class="piece-head">
+      <h2>VEGA</h2>
+      <span class="kind">Product landing page</span>
+    </div>
+    <p>A sales page for a Discord bot, written to convert server owners who are skimming on a phone. Scrolling game marquee, a live-API feature table, command reference, and pricing tiers — all in one file, no framework and no build step.</p>
+    <p class="built">Hand-written HTML &amp; CSS · CSS animation · responsive to 375px</p>
+    <div class="links">
+      <a class="btn primary" href="vega/">Open the page</a>
+      <a class="btn" href="https://vegabot.org" target="_blank" rel="noopener">See it live at vegabot.org</a>
+    </div>
+  </article>
+
+  <article class="piece">
+    <div class="piece-head">
+      <h2>DayZ Mod Assistant</h2>
+      <span class="kind">Landing page + browser tools</span>
+    </div>
+    <p>A landing page for a modding toolkit, plus five working tools that run entirely in the browser with no server behind them. The loot-table editor parses and rewrites game XML in place; the trader and economy tools do the arithmetic server admins would otherwise do by hand in a spreadsheet.</p>
+    <p class="built">Vanilla JavaScript · client-side XML parsing · file read/write in-browser</p>
+    <div class="links">
+      <a class="btn primary" href="dayz/">Open the page</a>
+      <a class="btn" href="dayz/tools/types-editor.html">Loot table editor</a>
+      <a class="btn" href="dayz/tools/trader.html">Trader pricing</a>
+      <a class="btn" href="dayz/tools/comparator.html">File comparator</a>
+    </div>
+    <p class="note">The tools are fully functional — open one and use it. They need no login and send nothing anywhere.</p>
+  </article>
+
+  <article class="piece">
+    <div class="piece-head">
+      <h2>Cannabis AI Suite</h2>
+      <span class="kind">Vertical landing page</span>
+    </div>
+    <p>A one-page pitch covering six products for one industry, built so a buyer can find the single product that matches their problem without reading the other five. Each card links through to that product's own interface.</p>
+    <p class="built">Hand-written HTML &amp; CSS · multi-product information design</p>
+    <div class="links">
+      <a class="btn primary" href="cannabis/">Open the page</a>
+    </div>
+    <p class="note">The six product interfaces are linked from the page and open normally; each one asks for a license key past the entry screen, so the working applications aren't reachable from here.</p>
+  </article>
+
+  <article class="piece">
+    <div class="piece-head">
+      <h2>This site</h2>
+      <span class="kind">Services site</span>
+    </div>
+    <p>The page you came in through. Built the same way as everything above — one file, system-matched typography, light and dark handled by token, nothing loaded that isn't needed.</p>
+    <p class="built">Hand-written HTML &amp; CSS · Google Fonts · GitHub Pages</p>
+    <div class="links">
+      <a class="btn primary" href="../">Back to the main page</a>
+    </div>
+  </article>
+
+  <footer>
+    <span>NormandinTECH LLC</span>
+    <span><a href="mailto:seth@normandintech.com">seth@normandintech.com</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
